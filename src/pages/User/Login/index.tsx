@@ -1,21 +1,23 @@
 import Footer from '@/components/Footer';
-import {login} from '@/services/ant-design-pro/api';
+import {fetchCode, login} from '@/services/ant-design-pro/api';
 import {getFakeCaptcha} from '@/services/ant-design-pro/login';
 import {
-  AlipayCircleOutlined,
-  LockOutlined,
-  MobileOutlined,
-  TaobaoCircleOutlined,
-  UserOutlined,
-  WeiboCircleOutlined,
+    AlipayCircleOutlined,
+    LockOutlined,
+    MobileOutlined,
+    TaobaoCircleOutlined,
+    UserOutlined,
+    WeiboCircleOutlined,
 } from '@ant-design/icons';
 import {LoginForm, ProFormCaptcha, ProFormCheckbox, ProFormText,} from '@ant-design/pro-components';
 import {useEmotionCss} from '@ant-design/use-emotion-css';
 import {FormattedMessage, Helmet, history, SelectLang, useIntl, useModel} from '@umijs/max';
 import {Alert, message, Tabs} from 'antd';
 import Settings from '../../../../config/defaultSettings';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {flushSync} from 'react-dom';
+import qs from 'qs';
+
 
 const ActionIcons = () => {
     const langClassName = useEmotionCss(({token}) => {
@@ -78,10 +80,28 @@ const LoginMessage: React.FC<{
     );
 };
 
+
 const Login: React.FC = () => {
+    useEffect(() => {
+
+
+        const urlParams = qs.parse(window.location.search, {ignoreQueryPrefix: true}) as API.CodeParam;
+        if (urlParams.nonceId !== undefined) {
+            localStorage.setItem('nonceId', urlParams.nonceId)
+        }
+
+        const nonceId = localStorage.getItem("nonceId")
+        if (nonceId === null || nonceId === undefined) {
+            // const backURL = 'http://192.168.1.130:8080/oauth2/authorize?client_id=messaging-client&response_type=code&scope=message.read&redirect_uri=http%3A%2F%2F127.0.0.1%3A8000%2Flogin%2Foauth2%2Fcode%2Fmessaging-client-oidc';
+            const backURL: string = 'http://192.168.1.130:8080/oauth2/authorize?client_id=messaging-client&response_type=code&scope=message.read&redirect_uri=https://www.baidu.com'
+            history.push(backURL)
+        }
+
+    }, []);
     const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
     const [type, setType] = useState<string>('account');
     const {initialState, setInitialState} = useModel('@@initialState');
+
 
     const containerClassName = useEmotionCss(() => {
         return {
@@ -109,24 +129,38 @@ const Login: React.FC = () => {
         }
     };
 
+
     const handleSubmit = async (values: API.LoginParams) => {
         try {
+            values.nonceId = localStorage.getItem('nonceId')
+            const urlParams = qs.parse(window.location.search, {ignoreQueryPrefix: true});
+
+            const params = {...values, ...urlParams};
+            console.log(params)
             // 登录
-            const msg = await login({...values, type});
-            if (msg.status === 'ok') {
+            const msg = await login({...params});
+            if (msg.success) {
                 const defaultLoginSuccessMessage = intl.formatMessage({
                     id: 'pages.login.success',
                     defaultMessage: '登录成功！',
                 });
                 message.success(defaultLoginSuccessMessage);
-                await fetchUserInfo();
-                const urlParams = new URL(window.location.href).searchParams;
-                history.push(urlParams.get('redirect') || '/');
+                // await fetchUserInfo();
+                const result = await fetchCode({...params, 'nonceId': values.nonceId})
+                console.log(result)
+                // history.push(result);
+
+                // const urlParams = new URL(window.location.href).searchParams;
+                // history.push(urlParams.get('redirect') || '/');
+
+                // const backURL: string = 'http://192.168.1.130:8080/oauth2/authorize?client_id=messaging-client&response_type=code&scope=message.read&redirect_uri=https://www.baidu.com' + '&nonceId=' + values.nonceId;
+                // history.push(backURL);
+
+
                 return;
             }
-            console.log(msg);
             // 如果失败去设置用户错误信息
-            setUserLoginState(msg);
+            setUserLoginState(msg.message);
         } catch (error) {
             const defaultLoginFailureMessage = intl.formatMessage({
                 id: 'pages.login.failure',

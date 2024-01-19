@@ -23,15 +23,16 @@ export async function getInitialState(): Promise<{
     loading?: boolean;
     fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
 }> {
+
     const fetchUserInfo = async () => {
         try {
-            console.log('test222');
 
             const msg = await queryCurrentUser({
                 skipErrorHandler: true,
             });
             return msg.data;
         } catch (error) {
+            console.log(window.location.search);
             history.push(loginPath);
         }
         return undefined;
@@ -39,7 +40,6 @@ export async function getInitialState(): Promise<{
     // 如果不是登录页面，执行
     const {location} = history;
     if (location.pathname !== loginPath) {
-        console.log('test1');
         const currentUser = await fetchUserInfo();
         return {
             fetchUserInfo,
@@ -47,6 +47,7 @@ export async function getInitialState(): Promise<{
             settings: defaultSettings as Partial<LayoutSettings>,
         };
     }
+
     return {
         fetchUserInfo,
         settings: defaultSettings as Partial<LayoutSettings>,
@@ -72,6 +73,7 @@ export const layout: RunTimeLayoutConfig = ({initialState, setInitialState}) => 
             const {location} = history;
             // 如果没有登录，重定向到 login
             if (!initialState?.currentUser && location.pathname !== loginPath) {
+
                 history.push(loginPath);
             }
         },
@@ -116,7 +118,7 @@ export const layout: RunTimeLayoutConfig = ({initialState, setInitialState}) => 
                         disableUrlParams
                         enableDarkTheme
                         settings={initialState?.settings}
-                        onSettingChange={(settingsj) => {
+                        onSettingChange={(settings) => {
                             setInitialState((preInitialState) => ({
                                 ...preInitialState,
                                 settings,

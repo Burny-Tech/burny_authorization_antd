@@ -22,14 +22,31 @@ export async function outLogin(options?: { [key: string]: any }) {
 
 /** 登录接口 POST /api/login/account */
 export async function login(body: API.LoginParams, options?: { [key: string]: any }) {
-    return request<API.LoginResult>('/api/login/account', {
+    return request<API.LoginResult>('/api/login', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'nonceId': body.nonceId
         },
-        data: body,
-        ...(options || {}),
+        params: {...body, ...options},
+        ...(options || {...body}),
     });
+}
+
+export async function fetchCode(params: {}) {
+    return request('/api/oauth2/authorize', {
+            method: 'GET',
+            params: params,
+        },
+    );
+}
+
+export async function fetchToken(params: {}) {
+    return request('/api/oauth2/authorize', {
+            method: 'POST',
+            params: params,
+
+        },
+    );
 }
 
 /** 此处后端没有提供注释 GET /api/notices */
